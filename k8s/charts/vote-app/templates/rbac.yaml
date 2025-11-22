@@ -4,7 +4,7 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: vote-sa
-  namespace: { { .Release.Namespace } }
+  namespace: {{ .Release.Namespace }}
   labels:
     app: vote
 ---
@@ -13,7 +13,7 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: result-sa
-  namespace: { { .Release.Namespace } }
+  namespace: {{ .Release.Namespace }}
   labels:
     app: result
 ---
@@ -22,7 +22,7 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: worker-sa
-  namespace: { { .Release.Namespace } }
+  namespace: {{ .Release.Namespace }}
   labels:
     app: worker
 ---
@@ -31,7 +31,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
   name: vote-role
-  namespace: { { .Release.Namespace } }
+  namespace: {{ .Release.Namespace }}
 rules:
   - apiGroups: [""]
     resources: ["pods"]
@@ -45,7 +45,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
   name: result-role
-  namespace: { { .Release.Namespace } }
+  namespace: {{ .Release.Namespace }}
 rules:
   - apiGroups: [""]
     resources: ["pods"]
@@ -59,7 +59,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
   name: worker-role
-  namespace: { { .Release.Namespace } }
+  namespace: {{ .Release.Namespace }}
 rules:
   - apiGroups: [""]
     resources: ["pods"]
@@ -70,7 +70,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
   name: vote-rolebinding
-  namespace: { { .Release.Namespace } }
+  namespace: {{ .Release.Namespace }}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
@@ -78,14 +78,14 @@ roleRef:
 subjects:
   - kind: ServiceAccount
     name: vote-sa
-    namespace: { { .Release.Namespace } }
+    namespace: {{ .Release.Namespace }}
 ---
 # RoleBinding for Result service
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
   name: result-rolebinding
-  namespace: { { .Release.Namespace } }
+  namespace: {{ .Release.Namespace }}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
@@ -93,14 +93,14 @@ roleRef:
 subjects:
   - kind: ServiceAccount
     name: result-sa
-    namespace: { { .Release.Namespace } }
+    namespace: {{ .Release.Namespace }}
 ---
 # RoleBinding for Worker service
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
   name: worker-rolebinding
-  namespace: { { .Release.Namespace } }
+  namespace: {{ .Release.Namespace }}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
@@ -108,4 +108,4 @@ roleRef:
 subjects:
   - kind: ServiceAccount
     name: worker-sa
-    namespace: { { .Release.Namespace } }
+    namespace: {{ .Release.Namespace }}
