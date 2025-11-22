@@ -16,7 +16,7 @@
 
 ## Project Overview
 
-A distributed voting application demonstrating production-ready DevOps practices including containerization, Kubernetes orchestration, comprehensive monitoring, and automated CI/CD pipelines.
+Distributed voting application with Docker containerization, Kubernetes deployment, Prometheus/Grafana monitoring, and GitHub Actions CI/CD pipeline.
 
 ### Technology Stack
 

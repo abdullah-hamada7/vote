@@ -120,7 +120,7 @@ jobs:
           sleep 10
 
           # Test vote service (port-forward in background)
-          kubectl port-forward -n ${{ env.ENVIRONMENT }} svc/vote-app-vote 8080:80 &
+          kubectl port-forward -n ${{ env.ENVIRONMENT }} svc/vote 8080:80 &
           PF_PID=$!
           sleep 5
 
@@ -135,7 +135,7 @@ jobs:
           kill $PF_PID
 
           # Test result service
-          kubectl port-forward -n ${{ env.ENVIRONMENT }} svc/vote-app-result 8081:80 &
+          kubectl port-forward -n ${{ env.ENVIRONMENT }} svc/result 8081:80 &
           PF_PID=$!
           sleep 5
 

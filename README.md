@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-This is a distributed voting application that allows users to vote between two options and view real-time results. The application consists of multiple microservices that work together to provide a complete voting experience.
+Distributed voting application with three microservices: vote frontend (Python/Flask), result frontend (Node.js), and worker service (.NET). Uses Redis for message queuing and PostgreSQL for data persistence.
 
 ## Application Architecture
 
@@ -119,5 +119,3 @@ The application includes a seed service (`/seed-data`) that can populate the dat
 - The result service uses WebSocket for real-time updates
 - The worker service continuously processes votes from the Redis queue
 - Make sure to handle service startup order properly with health checks
-
-Good luck with your challenge! 🚀
