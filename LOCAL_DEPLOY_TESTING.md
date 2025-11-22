@@ -51,6 +51,7 @@ The script mirrors the **deploy** job from `.github/workflows/ci-cd.yml`:
 2. **Validates Resources**
    - Confirms Helm chart exists at `./k8s/charts/vote-app`
    - Checks for environment-specific values file
+   - Updates Helm dependencies (downloads Bitnami Redis and PostgreSQL charts)
 
 3. **Deploys with Helm**
 
@@ -63,6 +64,11 @@ The script mirrors the **deploy** job from `.github/workflows/ci-cd.yml`:
      --set result.image=ghcr.io/abdullah-hamada7/vote/result:<sha> \
      --set worker.image=ghcr.io/abdullah-hamada7/vote/worker:<sha>
    ```
+
+   This single command deploys:
+   - Redis (via Bitnami chart dependency)
+   - PostgreSQL (via Bitnami chart dependency)
+   - Vote, Result, and Worker services
 
 4. **Verifies Deployments**
    - Checks rollout status for all services (vote, result, worker)
@@ -93,6 +99,8 @@ Commit SHA: latest
 📋 Step 2: Verifying Helm chart...
 ✅ Helm chart found
 ✅ Using values file: ./k8s/charts/vote-app/values-dev.yaml
+Updating Helm dependencies...
+✅ Dependencies updated
 
 📋 Step 3: Deploying with Helm...
 ✅ Helm deployment completed

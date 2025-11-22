@@ -87,6 +87,11 @@ jobs:
         with:
           version: "v1.26.0"
 
+      - name: Update Helm Dependencies
+        run: |
+          echo "Updating Helm dependencies..."
+          helm dependency update ./k8s/charts/vote-app
+
       - name: Deploy with Helm
         run: |
           helm upgrade --install vote-app ./k8s/charts/vote-app \

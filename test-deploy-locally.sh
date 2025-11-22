@@ -58,6 +58,10 @@ else
     echo "[OK] Using values file: $VALUES_FILE"
 fi
 
+echo "Updating Helm dependencies..."
+helm dependency update ./k8s/charts/vote-app
+echo "[OK] Dependencies updated"
+
 # Step 3: Deploy with Helm (matching the workflow)
 echo ""
 echo "[Step 3] Deploying with Helm..."

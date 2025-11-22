@@ -124,10 +124,13 @@ All services use multi-stage builds and non-root users:
 
 ```
 k8s/charts/vote-app/
-├── Chart.yaml                    # Chart metadata
+├── Chart.yaml                    # Chart metadata + dependencies
 ├── values.yaml                   # Default values
 ├── values-dev.yaml               # Development environment
 ├── values-prod.yaml              # Production environment
+├── charts/                       # Downloaded dependencies
+│   ├── redis-18.19.4.tgz        # Bitnami Redis chart
+│   └── postgresql-13.4.4.tgz    # Bitnami PostgreSQL chart
 └── templates/
     ├── vote-deployment.yaml      # Vote service deployment
     ├── result-deployment.yaml    # Result service deployment
@@ -138,6 +141,14 @@ k8s/charts/vote-app/
     ├── network-policies.yaml     # Zero-trust network policies
     └── pod-disruption-budgets.yaml # High availability
 ```
+
+**Helm Dependencies:**
+
+The chart uses official Bitnami charts for production-ready database deployments:
+- **Redis** (v18.19.4): Standalone architecture, no authentication
+- **PostgreSQL** (v13.4.4): Single primary instance with persistent storage
+
+Both dependencies are configured with `fullnameOverride` to maintain service name compatibility (`redis-master` and `postgresql`).
 
 #### Security Contexts
 
@@ -352,11 +363,13 @@ kubectl port-forward -n monitoring svc/prometheus-kube-prometheus-alertmanager 9
 - Runs per service (3 parallel scans)
 
 **3. Deployment**
+- Updates Helm dependencies (downloads Bitnami Redis & PostgreSQL charts)
 - Helm upgrade/install to k3s
 - Namespace: Configurable (dev/prod)
 - Uses environment-specific values files
 - Sets image tags to git SHA
 - Creates namespace if not exists
+- Single command deploys all resources (databases + application)
 
 **4. Verification**
 - Waits for rollout completion (5-minute timeout)
@@ -485,19 +498,7 @@ docker compose up -d result
 
 ### K3s Deployment
 
-#### 1. Deploy Infrastructure (Postgres, Redis)
-
-```bash
-# Apply manifests
-kubectl apply -f k8s/manifests/postgres.yaml
-kubectl apply -f k8s/manifests/redis.yaml
-
-# Verify
-kubectl get pods -n dev
-kubectl get pvc -n dev
-```
-
-#### 2. Deploy Monitoring
+#### 1. Deploy Monitoring
 
 ```bash
 cd monitoring
@@ -508,25 +509,36 @@ kubectl get pods -n monitoring
 kubectl get svc -n monitoring
 ```
 
-#### 3. Deploy Application
+#### 2. Deploy Application (with Helm Dependencies)
 
 ```bash
 # Import images to k3s
 ./import-images.sh
 
-# Deploy with Helm
+# Update Helm dependencies (downloads Bitnami Redis & PostgreSQL charts)
+cd k8s/charts/vote-app
+helm dependency update
+cd ../../..
+
+# Deploy with Helm (single command deploys everything)
 helm upgrade --install vote-app ./k8s/charts/vote-app \
   --namespace dev \
   --create-namespace \
   --values ./k8s/charts/vote-app/values-dev.yaml
 
-# Verify
+# Verify all pods (including databases)
 kubectl get pods -n dev
 kubectl get svc -n dev
 kubectl get ingress -n dev
 ```
 
-#### 4. Access Application
+**What Gets Deployed:**
+- Redis (via Bitnami chart dependency)
+- PostgreSQL (via Bitnami chart dependency)
+- Vote, Result, and Worker services
+- All supporting resources (RBAC, NetworkPolicies, etc.)
+
+#### 3. Access Application
 
 **Via Port-Forward:**
 ```bash
@@ -731,16 +743,16 @@ vote/
 │   ├── postgres.sh                # PostgreSQL health check
 │   └── redis.sh                   # Redis health check
 ├── k8s/
-│   ├── charts/
-│   │   └── vote-app/              # Helm chart
-│   │       ├── Chart.yaml
-│   │       ├── values.yaml
-│   │       ├── values-dev.yaml    # Dev environment
-│   │       ├── values-prod.yaml   # Prod environment
-│   │       └── templates/         # K8s manifests
-│   └── manifests/
-│       ├── postgres.yaml          # PostgreSQL deployment
-│       └── redis.yaml             # Redis deployment
+│   └── charts/
+│       └── vote-app/              # Helm chart
+│           ├── Chart.yaml         # Chart metadata + dependencies
+│           ├── values.yaml        # Default configuration
+│           ├── values-dev.yaml    # Dev environment
+│           ├── values-prod.yaml   # Prod environment
+│           ├── charts/            # Downloaded dependencies
+│           │   ├── redis-*.tgz    # Bitnami Redis chart
+│           │   └── postgresql-*.tgz # Bitnami PostgreSQL chart
+│           └── templates/         # K8s manifests
 ├── monitoring/
 │   ├── README.md                  # Monitoring setup guide
 │   ├── values.yaml                # Prometheus stack config
@@ -765,6 +777,9 @@ vote/
 │   └── Worker.csproj              # Project file
 ├── compose.yml                    # Docker Compose config
 ├── import-images.sh               # K3s image import
+├── test-deploy-locally.sh         # Local deployment testing
+├── LOCAL_DEPLOY_TESTING.md        # Deployment testing guide
+├── DOCUMENTATION.md               # This file
 └── README.md                      # Project overview
 ```
 

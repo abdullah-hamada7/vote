@@ -27,18 +27,15 @@ spec:
           imagePullPolicy: IfNotPresent
           env:
             - name: REDIS_HOST
-              value: "{{ .Values.redis.host }}"
+              value: "{{ .Values.redis.fullnameOverride }}-master"
             - name: POSTGRES_HOST
-              value: "{{ .Values.postgres.host }}"
+              value: "{{ .Values.postgresql.fullnameOverride }}"
             - name: POSTGRES_USER
-              value: "{{ .Values.postgres.user }}"
+              value: "{{ .Values.postgresql.auth.username }}"
             - name: POSTGRES_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: postgres-secret
-                  key: postgres-password
+              value: "{{ .Values.postgresql.auth.password }}"
             - name: POSTGRES_DB
-              value: "{{ .Values.postgres.db }}"
+              value: "{{ .Values.postgresql.auth.database }}"
           securityContext:
             allowPrivilegeEscalation: false
             capabilities:

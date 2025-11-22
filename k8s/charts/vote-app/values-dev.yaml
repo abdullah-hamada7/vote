@@ -44,16 +44,38 @@ worker:
       cpu: 100m
       memory: 128Mi
 
+# Redis dependency configuration (Bitnami chart)
 redis:
-  host: redis-master
-  port: 6379
+  enabled: true
+  fullnameOverride: "redis"
+  architecture: standalone
+  auth:
+    enabled: false
+  master:
+    resources:
+      requests:
+        cpu: 50m
+        memory: 64Mi
+      limits:
+        cpu: 100m
+        memory: 128Mi
 
-postgres:
-  host: postgresql
-  port: 5432
-  user: postgres
-  db: postgres
-  # Password stored in postgres-secret Kubernetes Secret
+# PostgreSQL dependency configuration (Bitnami chart)
+postgresql:
+  enabled: true
+  fullnameOverride: "postgresql"
+  auth:
+    username: postgres
+    password: postgres
+    database: postgres
+  primary:
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 200m
+        memory: 256Mi
 
 ingress:
   enabled: true
