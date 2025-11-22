@@ -1,0 +1,71 @@
+# Development environment values
+# Namespace: dev
+
+# Environment-specific settings
+environment: dev
+namespace: dev
+
+vote:
+  image: vote:latest
+  replicas: 1  # Lower replicas for dev
+  service:
+    port: 80
+    type: ClusterIP
+  resources:
+    requests:
+      cpu: 50m  # Lower resources for dev
+      memory: 64Mi
+    limits:
+      cpu: 100m
+      memory: 128Mi
+
+result:
+  image: result:latest
+  replicas: 1  # Lower replicas for dev
+  service:
+    port: 80
+    type: ClusterIP
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 100m
+      memory: 128Mi
+
+worker:
+  image: worker:latest
+  replicas: 1  # Lower replicas for dev
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 100m
+      memory: 128Mi
+
+redis:
+  host: redis-master
+  port: 6379
+
+postgres:
+  host: postgresql
+  port: 5432
+  user: postgres
+  db: postgres
+  # Password stored in postgres-secret Kubernetes Secret
+
+ingress:
+  enabled: true
+  className: traefik
+  hosts:
+    - host: vote.dev.local
+      paths:
+        - path: /
+          pathType: Prefix
+          service: vote
+    - host: result.dev.local
+      paths:
+        - path: /
+          pathType: Prefix
+          service: result

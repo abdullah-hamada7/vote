@@ -1,0 +1,150 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+          - dev
+          - prod
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+  ENVIRONMENT: ${{ github.event.inputs.environment || 'dev' }}
+
+jobs:
+  build-and-scan:
+    runs-on: [self-hosted, linux, x64]
+    permissions:
+      contents: read
+      packages: write
+      security-events: write
+
+    strategy:
+      matrix:
+        service: [vote, result, worker]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6.0.0
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3.11.1
+
+      - name: Log in to the Container registry
+        uses: docker/login-action@v3.6.0
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6.18.0
+        with:
+          context: ./${{ matrix.service }}
+          push: true
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/${{ matrix.service }}:latest,${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/${{ matrix.service }}:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@0.33.1
+        with:
+          image-ref: '${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/${{ matrix.service }}:${{ github.sha }}'
+          format: 'sarif'
+          output: 'trivy-results-${{ matrix.service }}.sarif'
+          severity: 'CRITICAL,HIGH'
+
+      - name: Upload Trivy scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v4.31.4
+        with:
+          sarif_file: 'trivy-results-${{ matrix.service }}.sarif'
+
+  deploy:
+    needs: build-and-scan
+    runs-on: [self-hosted, linux, x64]
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6.0.0
+
+      - name: Set up Helm
+        uses: Azure/setup-helm@v4.3.1
+        with:
+          version: 'v3.11.1'
+
+      - name: Set up Kubectl
+        uses: azure/setup-kubectl@v4.0.1
+        with:
+          version: 'v1.26.0'
+
+      - name: Deploy with Helm
+        run: |
+          helm upgrade --install vote-app ./k8s/charts/vote-app \
+            --namespace ${{ env.ENVIRONMENT }} \
+            --create-namespace \
+            --values ./k8s/charts/vote-app/values-${{ env.ENVIRONMENT }}.yaml \
+            --set vote.image=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/vote:${{ github.sha }} \
+            --set result.image=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/result:${{ github.sha }} \
+            --set worker.image=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/worker:${{ github.sha }}
+
+      - name: Verify Deployments
+        run: |
+          echo "Verifying all deployments in ${{ env.ENVIRONMENT }}..."
+          kubectl rollout status deployment/vote-app-vote -n ${{ env.ENVIRONMENT }} --timeout=5m
+          kubectl rollout status deployment/vote-app-result -n ${{ env.ENVIRONMENT }} --timeout=5m
+          kubectl rollout status deployment/vote-app-worker -n ${{ env.ENVIRONMENT }} --timeout=5m
+          
+          echo "Verifying pods are running..."
+          kubectl get pods -n ${{ env.ENVIRONMENT }} -l app=vote
+          kubectl get pods -n ${{ env.ENVIRONMENT }} -l app=result
+          kubectl get pods -n ${{ env.ENVIRONMENT }} -l app=worker
+          
+          echo "Checking service endpoints..."
+          kubectl get endpoints -n ${{ env.ENVIRONMENT }}
+      
+      - name: Smoke Tests
+        run: |
+          echo "Running smoke tests for ${{ env.ENVIRONMENT }} environment..."
+          
+          # Wait for services to be ready
+          sleep 10
+          
+          # Test vote service (port-forward in background)
+          kubectl port-forward -n ${{ env.ENVIRONMENT }} svc/vote-app-vote 8080:80 &
+          PF_PID=$!
+          sleep 5
+          
+          # Check if vote page loads
+          if curl -f http://localhost:8080/ > /dev/null 2>&1; then
+            echo "✅ Vote service is responding"
+          else
+            echo "❌ Vote service health check failed"
+            kill $PF_PID
+            exit 1
+          fi
+          kill $PF_PID
+          
+          # Test result service
+          kubectl port-forward -n ${{ env.ENVIRONMENT }} svc/vote-app-result 8081:80 &
+          PF_PID=$!
+          sleep 5
+          
+          if curl -f http://localhost:8081/ > /dev/null 2>&1; then
+            echo "✅ Result service is responding"
+          else
+            echo "❌ Result service health check failed"
+            kill $PF_PID
+            exit 1
+          fi
+          kill $PF_PID
+          
+          echo "✅ All smoke tests passed!"

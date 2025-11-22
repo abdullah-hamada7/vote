@@ -1,0 +1,103 @@
+---
+# PrometheusRule for Voting Application Alerts
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: vote-app-alerts
+  namespace: dev
+  labels:
+    release: prometheus
+spec:
+  groups:
+    - name: vote-app
+      interval: 30s
+      rules:
+        # High pod restart rate
+        - alert: HighPodRestartRate
+          expr: rate(kube_pod_container_status_restarts_total{namespace="dev"}[15m]) > 0.5
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "High pod restart rate in {{ $labels.namespace }}"
+            description: "Pod {{ $labels.pod }} is restarting frequently"
+        
+        # Pod not ready
+        - alert: PodNotReady
+          expr: kube_pod_status_ready{condition="false", namespace="dev"} == 1
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Pod not ready in {{ $labels.namespace }}"
+            description: "Pod {{ $labels.pod }} has been not ready for 5 minutes"
+        
+        # High memory usage
+        - alert: HighMemoryUsage
+          expr: container_memory_usage_bytes{namespace="dev"} / container_spec_memory_limit_bytes{namespace="dev"} > 0.9
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "High memory usage"
+            description: "Container {{ $labels.container }} in pod {{ $labels.pod }} is using > 90% memory"
+        
+        # High CPU usage
+        - alert: HighCPUUsage
+          expr: rate(container_cpu_usage_seconds_total{namespace="dev"}[5m]) > 0.8
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: "High CPU usage"
+            description: "Container {{ $labels.container }} in pod {{ $labels.pod }} has high CPU usage"
+        
+        # PostgreSQL down
+        - alert: PostgreSQLDown
+          expr: up{job="postgresql", namespace="dev"} == 0
+          for: 1m
+          labels:
+            severity: critical
+          annotations:
+            summary: "PostgreSQL is down"
+            description: "PostgreSQL database has been down for more than 1 minute"
+        
+        # Redis down
+        - alert: RedisDown
+          expr: up{job="redis", namespace="dev"} == 0
+          for: 1m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Redis is down"
+            description: "Redis has been down for more than 1 minute"
+        
+        # Vote service down
+        - alert: VoteServiceDown
+          expr: up{job="vote", namespace="dev"} == 0
+          for: 2m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Vote service is down"
+            description: "Vote service has been unavailable for more than 2 minutes"
+        
+        # Result service down
+        - alert: ResultServiceDown
+          expr: up{job="result", namespace="dev"} == 0
+          for: 2m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Result service is down"
+            description: "Result service has been unavailable for more than 2 minutes"
+        
+        # Worker service down
+        - alert: WorkerServiceDown
+          expr: up{job="worker", namespace="dev"} == 0
+          for: 2m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Worker service is down"
+            description: "Worker service has been unavailable for more than 2 minutes"

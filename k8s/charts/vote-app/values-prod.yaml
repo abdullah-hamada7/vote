@@ -1,0 +1,71 @@
+# Production environment values
+# Namespace: prod
+
+# Environment-specific settings
+environment: prod
+namespace: prod
+
+vote:
+  image: ghcr.io/abdullah-hamada7/vote/vote:latest
+  replicas: 3  # Higher replicas for HA
+  service:
+    port: 80
+    type: ClusterIP
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi
+
+result:
+  image: ghcr.io/abdullah-hamada7/vote/result:latest
+  replicas: 2  # Higher replicas for HA
+  service:
+    port: 80
+    type: ClusterIP
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi
+
+worker:
+  image: ghcr.io/abdullah-hamada7/vote/worker:latest
+  replicas: 2  # Multiple workers for better processing
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi
+
+redis:
+  host: redis-master
+  port: 6379
+
+postgres:
+  host: postgresql
+  port: 5432
+  user: postgres
+  db: postgres
+  # Password stored in postgres-secret Kubernetes Secret
+
+ingress:
+  enabled: true
+  className: traefik
+  hosts:
+    - host: vote.prod.local
+      paths:
+        - path: /
+          pathType: Prefix
+          service: vote
+    - host: result.prod.local
+      paths:
+        - path: /
+          pathType: Prefix
+          service: result

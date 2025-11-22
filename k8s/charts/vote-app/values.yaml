@@ -1,0 +1,64 @@
+vote:
+  image: vote:latest
+  replicas: 2
+  service:
+    port: 80
+    type: ClusterIP
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi
+
+result:
+  image: result:latest
+  replicas: 1
+  service:
+    port: 80
+    type: ClusterIP
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi
+
+worker:
+  image: worker:latest
+  replicas: 1
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi
+
+redis:
+  host: redis-master
+  port: 6379
+
+postgres:
+  host: postgresql
+  port: 5432
+  user: postgres
+  db: postgres
+  # Password stored in postgres-secret Kubernetes Secret
+
+ingress:
+  enabled: true
+  className: traefik
+  hosts:
+    - host: vote.local
+      paths:
+        - path: /
+          pathType: Prefix
+          service: vote
+    - host: result.local
+      paths:
+        - path: /
+          pathType: Prefix
+          service: result

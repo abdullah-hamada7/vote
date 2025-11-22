@@ -1,0 +1,168 @@
+---
+# Helm values for kube-prometheus-stack
+# Optimized for k3s local cluster
+
+# Grafana configuration
+grafana:
+  enabled: true
+  adminPassword: "admin123"  # Change in production
+  
+  service:
+    type: NodePort
+    nodePort: 30300
+  
+  # Pre-configure data sources
+  datasources:
+    datasources.yaml:
+      apiVersion: 1
+      datasources:
+        - name: Prometheus
+          type: prometheus
+          url: http://prometheus-kube-prometheus-prometheus:9090
+          access: proxy
+          isDefault: true
+
+  # Dashboard providers
+  dashboardProviders:
+    dashboardproviders.yaml:
+      apiVersion: 1
+      providers:
+        - name: 'default'
+          orgId: 1
+          folder: ''
+          type: file
+          disableDeletion: false
+          editable: true
+          options:
+            path: /var/lib/grafana/dashboards/default
+
+  # Import custom dashboards
+  dashboards:
+    default:
+      voting-app:
+        gnetId: 15661  # Kubernetes cluster monitoring
+        revision: 1
+        datasource: Prometheus
+      
+      redis:
+        gnetId: 11835  # Redis dashboard
+        revision: 1
+        datasource: Prometheus
+      
+      postgresql:
+        gnetId: 9628   # PostgreSQL dashboard
+        revision: 7
+        datasource: Prometheus
+
+# Prometheus configuration
+prometheus:
+  enabled: true
+  
+  service:
+    type: NodePort
+    nodePort: 30900
+  
+  prometheusSpec:
+    # Retention period
+    retention: 7d
+    
+    # Storage
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          accessModes: ["ReadWriteOnce"]
+          resources:
+            requests:
+              storage: 10Gi
+    
+    # Resource limits
+    resources:
+      requests:
+        cpu: 200m
+        memory: 512Mi
+      limits:
+        cpu: 500m
+        memory: 1Gi
+    
+    # Service monitor selector - match all
+    serviceMonitorSelector: {}
+    serviceMonitorNamespaceSelector: {}
+    
+    # Pod monitor selector
+    podMonitorSelector: {}
+    podMonitorNamespaceSelector: {}
+    
+    # Additional scrape configs for custom metrics
+    additionalScrapeConfigs:
+      - job_name: 'vote-app-pods'
+        kubernetes_sd_configs:
+          - role: pod
+            namespaces:
+              names:
+                - dev
+                - prod
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_pod_label_app]
+            regex: vote|result|worker
+            action: keep
+          - source_labels: [__meta_kubernetes_pod_name]
+            target_label: pod
+          - source_labels: [__meta_kubernetes_namespace]
+            target_label: namespace
+
+# AlertManager configuration
+alertmanager:
+  enabled: true
+  
+  service:
+    type: NodePort
+    nodePort: 30093
+  
+  config:
+    global:
+      resolve_timeout: 5m
+    
+    route:
+      group_by: ['alertname', 'cluster', 'service']
+      group_wait: 10s
+      group_interval: 10s
+      repeat_interval: 12h
+      receiver: 'null'
+      routes:
+        - match:
+            alertname: Watchdog
+          receiver: 'null'
+        - match:
+            severity: critical
+          receiver: 'critical'
+        - match:
+            severity: warning
+          receiver: 'warning'
+    
+    receivers:
+      - name: 'null'
+      - name: 'critical'
+        # Add webhook, email, or Slack here
+      - name: 'warning'
+        # Add webhook, email, or Slack here
+
+# Node exporter - collect host metrics
+prometheus-node-exporter:
+  enabled: true
+
+# kube-state-metrics - Kubernetes state metrics
+kube-state-metrics:
+  enabled: true
+
+# Disable components not needed for k3s
+kubeEtcd:
+  enabled: false
+
+kubeControllerManager:
+  enabled: false
+
+kubeScheduler:
+  enabled: false
+
+kubeProxy:
+  enabled: false

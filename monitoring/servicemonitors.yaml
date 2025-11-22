@@ -1,0 +1,88 @@
+---
+# ServiceMonitor for Vote Service
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: vote-service-monitor
+  namespace: dev
+  labels:
+    app: vote
+    release: prometheus
+spec:
+  selector:
+    matchLabels:
+      app: vote
+  endpoints:
+    - port: http
+      interval: 30s
+      path: /metrics
+---
+# ServiceMonitor for Result Service
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: result-service-monitor
+  namespace: dev
+  labels:
+    app: result
+    release: prometheus
+spec:
+  selector:
+    matchLabels:
+      app: result
+  endpoints:
+    - port: http
+      interval: 30s
+      path: /metrics
+---
+# ServiceMonitor for Worker Service
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: worker-service-monitor
+  namespace: dev
+  labels:
+    app: worker
+    release: prometheus
+spec:
+  selector:
+    matchLabels:
+      app: worker
+  endpoints:
+    - port: metrics
+      interval: 30s
+      path: /metrics
+---
+# ServiceMonitor for Redis
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: redis-service-monitor
+  namespace: dev
+  labels:
+    app: redis
+    release: prometheus
+spec:
+  selector:
+    matchLabels:
+      app: redis
+  endpoints:
+    - port: metrics
+      interval: 30s
+---
+# ServiceMonitor for PostgreSQL
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: postgres-service-monitor
+  namespace: dev
+  labels:
+    app: postgres
+    release: prometheus
+spec:
+  selector:
+    matchLabels:
+      app: postgres
+  endpoints:
+    - port: metrics
+      interval: 30s

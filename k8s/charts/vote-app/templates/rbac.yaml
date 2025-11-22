@@ -1,0 +1,111 @@
+---
+# ServiceAccount for Vote service
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: vote-sa
+  namespace: { { .Release.Namespace } }
+  labels:
+    app: vote
+---
+# ServiceAccount for Result service
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: result-sa
+  namespace: { { .Release.Namespace } }
+  labels:
+    app: result
+---
+# ServiceAccount for Worker service
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: worker-sa
+  namespace: { { .Release.Namespace } }
+  labels:
+    app: worker
+---
+# Role for Vote service (minimal permissions)
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: vote-role
+  namespace: { { .Release.Namespace } }
+rules:
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list"]
+  - apiGroups: [""]
+    resources: ["services"]
+    verbs: ["get"]
+---
+# Role for Result service (minimal permissions)
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: result-role
+  namespace: { { .Release.Namespace } }
+rules:
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list"]
+  - apiGroups: [""]
+    resources: ["services"]
+    verbs: ["get"]
+---
+# Role for Worker service (minimal permissions)
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: worker-role
+  namespace: { { .Release.Namespace } }
+rules:
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list"]
+---
+# RoleBinding for Vote service
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: vote-rolebinding
+  namespace: { { .Release.Namespace } }
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: vote-role
+subjects:
+  - kind: ServiceAccount
+    name: vote-sa
+    namespace: { { .Release.Namespace } }
+---
+# RoleBinding for Result service
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: result-rolebinding
+  namespace: { { .Release.Namespace } }
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: result-role
+subjects:
+  - kind: ServiceAccount
+    name: result-sa
+    namespace: { { .Release.Namespace } }
+---
+# RoleBinding for Worker service
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: worker-rolebinding
+  namespace: { { .Release.Namespace } }
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: worker-role
+subjects:
+  - kind: ServiceAccount
+    name: worker-sa
+    namespace: { { .Release.Namespace } }
