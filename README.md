@@ -1,3 +1,5 @@
+[![CI/CD Pipeline](https://github.com/abdullah-hamada7/vote/actions/workflows/ci-cd.yml/badge.svg?event=push)](https://github.com/abdullah-hamada7/vote/actions/workflows/ci-cd.yml)
+
 # Voting Application - Technical Documentation
 
 ## Table of Contents
