@@ -11,17 +11,6 @@ grafana:
     type: NodePort
     nodePort: 30300
   
-  # Pre-configure data sources
-  datasources:
-    datasources.yaml:
-      apiVersion: 1
-      datasources:
-        - name: Prometheus
-          type: prometheus
-          url: http://prometheus-kube-prometheus-prometheus:9090
-          access: proxy
-          isDefault: true
-
   # Dashboard providers
   dashboardProviders:
     dashboardproviders.yaml:
